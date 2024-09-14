@@ -24,6 +24,46 @@ def process(img):
     means = means.reshape(1600,)
     return means
 
+def characterParser(currentPlate):
+    # Character, minx --> A,64 B,178
+    currentPlate = sorted(currentPlate,key = lambda x:x[1])
+    currentPlate = np.array(currentPlate)
+    currentPlate = currentPlate[:,0]
+    currentPlate = currentPlate.tolist()
+    
+    # plaka her zaman 2 rakam ile başlar.
+    characterStep = 0
+    for i in range(len(currentPlate)):
+        try:
+            int(currentPlate[i])
+            characterStep += 1
+        except:
+            if characterStep > 0:
+                if i-2>= 0:
+                    currentPlate = currentPlate[i-2:]
+                break
+            currentPlate.pop(i)
+            
+    characterStep = 0
+
+    # plaka her zaman en fazla 4 rakam ile biter. (sayi)
+    
+    for i in range(len(currentPlate)):
+        controlIndex = -1 + (-1*characterStep)
+        try:
+            int(currentPlate[controlIndex])
+            characterStep += 1
+        except:
+            if characterStep > 0:
+                characterIndex =  len(currentPlate) - characterStep
+                print("karkter:",currentPlate[characterIndex])
+                currentPlate = currentPlate[:characterIndex+4]
+                break
+            currentPlate.pop(controlIndex)
+    return currentPlate
+
+
+
 def plateRecognition(img,plate):
     x,y,w,h = plate # plakanın koordinatlarını aldık
     if(w>h):
@@ -89,10 +129,14 @@ def plateRecognition(img,plate):
             ind = index.index(character)
             cls = classes[ind]
             
-            if cls=="background":
+            if cls=="arkaplan":
                 continue
             
             currentPlate.append([cls,minx])
             cv2.putText(write,cls,(minx-2,miny-2),cv2.FONT_HERSHEY_SIMPLEX,0.5,(0,255,0),1)           
             cv2.drawContours(write,[box],0,(0,255,0),1) 
+    
+    if len(currentPlate)>0:
+        currentPlate = characterParser(currentPlate)
+    
     return write,currentPlate
